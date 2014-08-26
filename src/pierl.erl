@@ -65,7 +65,6 @@ setup_universe() ->
 %% Pi-calculus primitives
 %% ======================================================================
 
--spec spawn(fun()) -> pid().
 spawn(F) when is_function(F) ->
     Pid = erlang:spawn(fun () -> receive (OwnChan) -> F(OwnChan) end end),
     Chan = new_chan(Pid),
