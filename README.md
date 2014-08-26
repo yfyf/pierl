@@ -26,33 +26,32 @@ Here's how you can run it:
         erlc -o ebin/ src/*.erl
         λ make run
         erl -pa ebin/ -s pierl
-        <..>
-        1> l(pierl_demo).
-        {module,pierl_demo}
-        2> pierl_demo:start().
-        {1409,66878,194273}
-        % you should now be spammed with messages like:
-        Sending message [{{1409,66878,194273},{1409,66878,194304}}] on chan
-            [{1409, 66878, 194312}] from [<0.35.0>]
-        Received message [{{1409,66878,194273},{1409,66878,194304}}] on chan
-            [{1409, 66878, 194312}]
-        Sending message [ack] on chan [{1409,66878,194273}] from [<0.37.0>]
-        Received message [ack] on chan [{1409,66878,194273}]
-        Sending message ["You got the same message 0 times."] on chan
-            [{1409,66878, 194312}] from [<0.39.0>]
-        Received message ["You got the same message 0 times."] on chan
-            [{1409,66878, 194312}]
-        Sending message ["You got the same message 0 times."] on chan
-            [{1409,66878, 194304}] from [<0.37.0>]
-        Sending message ["You got the same message 1 times."] on chan
-            [{1409,66878, 194312}] from [<0.39.0>]
-        Received message ["You got the same message 0 times."] on chan
-            [{1409,66878, 194304}]
-        Received message ["You got the same message 1 times."] on chan
-            [{1409,66878, 194312}]
-        Printer: oh hey, I got some message for printing: "You got the same
-            message 0 times."
-        <..>
+        Eshell V5.9.3  (abort with ^G)
+        1> pierl_demo:start().
+        {1409,71208,393398}
+
+        [debug] [chan: {1409,71208,394303}] <send> msg: {{1409,71208,394306}, {1409,71208,394289}} , from: <0.34.0>
+        [debug] [chan: {1409,71208,394303}] (recv) msg: {{1409,71208,394306}, {1409,71208,394289}}
+        [debug] [chan: {1409,71208,394306}] <send> msg: ack , from: <0.36.0>
+        [debug] [chan: {1409,71208,394306}] |flush| message [{109, {{1409,71208,394306}, ack}}] into [<0.38.0>]
+        [debug] [chan: {1409,71208,406372}] <send> msg: {'$delegate', {1409,71208,394306}} , from: <0.34.0>
+        [debug] [chan: {1409,71208,406372}] (recv) msg: {'$delegate', {1409,71208,394306}}
+        [debug] [chan: {1409,71208,394306}] (recv) msg: ack
+        [debug] [chan: {1409,71208,394303}] <send> msg: "You will get this message 1 more times." , from: <0.38.0>
+        [debug] [chan: {1409,71208,394303}] (recv) msg: "You will get this message 1 more times."
+        [debug] [chan: {1409,71208,394289}] <send> msg: "You will get this message 1 more times." , from: <0.36.0>
+        [debug] [chan: {1409,71208,394303}] <send> msg: "You will get this message 0 more times." , from: <0.38.0>
+        [debug] [chan: {1409,71208,394289}] (recv) msg: "You will get this message 1 more times."
+        [debug] [chan: {1409,71208,394303}] (recv) msg: "You will get this message 0 more times."
+        Printer: oh hey, I got some message for printing: "You will get this message 1 more times."
+        [debug] [chan: {1409,71208,394289}] <send> msg: "You will get this message 0 more times." , from: <0.36.0>
+        [debug] [chan: {1409,71208,394303}] <send> msg: "Ok, I am done with you." , from: <0.38.0>
+        [debug] [chan: {1409,71208,394289}] (recv) msg: "You will get this message 0 more times."
+        [debug] [chan: {1409,71208,394303}] (recv) msg: "Ok, I am done with you."
+        Printer: oh hey, I got some message for printing: "You will get this message 0 more times."
+        [debug] [chan: {1409,71208,394289}] <send> msg: "Ok, I am done with you." , from: <0.36.0>
+        [debug] [chan: {1409,71208,394289}] (recv) msg: "Ok, I am done with you."
+        Printer: oh hey, I got some message for printing: "Ok, I am done with you."
 
 
 # Why?
