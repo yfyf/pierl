@@ -12,8 +12,6 @@
 %%% * delegation can suffer from race conditions
 -module(pierl).
 
--compile({no_auto_import, [spawn/1]}).
--compile({no_auto_import, [send/2]}).
 -include("pierl.hrl").
 
 -define(PI_MSG_TAG, $m).
@@ -50,7 +48,8 @@
 %% ======================================================================
 
 setup_universe() ->
-    ets:new(?CHAN_REG_TABLE, [named_table, public, set]).
+    ets:new(?CHAN_REG_TABLE, [named_table, public, ordered_set,
+        {heir, erlang:group_leader(), undefined}]).
 
 %% ======================================================================
 %% Pi-calculus primitives
@@ -58,27 +57,32 @@ setup_universe() ->
 
 -spec spawn(fun()) -> pid().
 spawn(F) when is_function(F) ->
-    erlang:spawn(F);
+    Pid = erlang:spawn(fun () -> receive (OwnChan) -> F(OwnChan) end end),
+    Chan = new_chan(Pid),
+    Pid ! Chan,
+    Chan;
 spawn(Instructions) when is_list(Instructions) ->
     F = compile(Instructions),
     spawn(F).
 
 new_chan() ->
-    Chan = make_ref(),
-    reg_owner(self(), Chan),
-    Chan.
+    new_chan(self()).
 
 send(Chan, Msg) ->
     %% lets pretend this is atomic somehow
     ?ATOMICALLY(begin
         Owner = get_owner(Chan),
+        timer:sleep(500),
+        io:format(user, "Sending message [~p] on chan [~p] from [~p]~n", [Msg, Chan, self()]),
         Owner ! ?TAG_MSG(Chan, Msg)
     end).
 
 recv(Chan, ContF) ->
     ?ASSERT(i_own(Chan)),
     receive
-        ?TAG_MSG(Chan, M) -> ContF(M)
+        ?TAG_MSG(Chan, Msg) ->
+            io:format(user, "Received message [~p] on chan [~p]~n", [Msg, Chan]),
+            ContF(Msg)
     end.
 
 delegate(Chan, ReceiverChan) ->
@@ -123,7 +127,7 @@ compile(_) ->
     throw(not_implemented).
 
 reg_owner(Chan, Pid) ->
-    ets:insert(?CHAN_REG_TABLE, {Chan, Pid}).
+    ets:insert_new(?CHAN_REG_TABLE, {Chan, Pid}).
 
 block_channel(Chan) ->
     reg_owner(Chan, ?BLOCKED_CHAN).
@@ -133,16 +137,23 @@ get_owner(Chan) ->
         ?BLOCKED_CHAN ->
             timer:sleep(10),
             get_owner(Chan);
-        Pid ->
-            Pid
+        [{Chan, Pid}] ->
+            Pid;
+        [] ->
+            throw({channel_not_found, Chan})
     end.
+
+new_chan(Owner) ->
+    Chan = erlang:now(),
+    reg_owner(Chan, Owner),
+    Chan.
 
 %% should be checked statically
 i_own(Chan) ->
     Me = self(),
     case get_owner(Chan) == Me of
         true ->
-            ok;
+            true;
         false ->
             throw({channel_not_owned_by, Chan, Me})
     end.

@@ -1,1 +1,3 @@
+-compile({no_auto_import, [spawn/1]}).
+-compile({no_auto_import, [send/2]}).
 -define(DELEGATION(Chan), {'$delegate', Chan}).
