@@ -1,0 +1,1 @@
+-define(DELEGATION(Chan), {'$delegate', Chan}).
