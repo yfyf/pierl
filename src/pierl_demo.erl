@@ -5,8 +5,8 @@
 -define(PI, pierl).
 
 repeater(OwnChan) ->
-    ?PI:recv(OwnChan, fun ({From, OutputChan}) ->
-        ?PI:send(From, ack),
+    ?PI:recv(OwnChan, fun ({AckChan, OutputChan}) ->
+        ?PI:send(AckChan, ack),
         repeater(OwnChan, OutputChan)
     end).
 
@@ -16,19 +16,33 @@ repeater(OwnChan, OutputChan) ->
         repeater(OwnChan, OutputChan)
     end).
 
-sender(TargetChan) ->
-    sender(TargetChan, 0).
+sender(OwnChan, TargetChan) ->
+    ?PI:recv(OwnChan, fun (?DELEGATION(AckChan)) ->
+        ?PI:recv(AckChan, fun (ack) ->
+            %% got ack, we can go!
+            sender_body(TargetChan, 2)
+            end
+        )
+    end).
 
-sender(TargetChan, Count) ->
+sender_body(TargetChan, 0) ->
     ?PI:send(TargetChan,
-       "You got the same message " ++ integer_to_list(Count) ++ " times."
+       "Ok, I am done with you."
+    );
+sender_body(TargetChan, Count) ->
+    ?PI:send(TargetChan,
+       "You will get this message " ++
+            integer_to_list(Count - 1) ++
+            " more times."
     ),
-    sender(TargetChan, Count + 1).
+    sender_body(TargetChan, Count - 1).
 
 printer(OwnChan) ->
     ?PI:recv(OwnChan,
         fun (M) ->
-            io:format("Printer: oh hey, I got some message for printing: ~p~n", [M]),
+            io:format(user,
+                "Printer: oh hey, I got some message for printing: ~p~n",
+                [M]),
             printer(OwnChan)
         end
     ).
@@ -36,10 +50,15 @@ printer(OwnChan) ->
 start() ->
     ?PI:spawn(fun main/1).
 
-main(OwnChan) ->
+main(_) ->
+    random:seed(now()),
     PrinterChan = ?PI:spawn(fun printer/1),
     RepeaterChan = ?PI:spawn(fun repeater/1),
-    ?PI:send(RepeaterChan, {OwnChan, PrinterChan}),
-    ?PI:recv(OwnChan, fun (ack) ->
-        ?PI:spawn(fun (_) -> sender(RepeaterChan) end)
-    end).
+    AckChan = ?PI:new_chan(),
+    ?PI:send(RepeaterChan, {AckChan, PrinterChan}),
+    SenderChan = ?PI:spawn(fun (SelfChan) -> sender(SelfChan, RepeaterChan) end),
+    %% This so that sometimes the ack would end up in this process
+    %% and sometimes it would get delayed and already arrive after the
+    %% delegation.
+    timer:sleep(random:uniform(12)),
+    ?PI:delegate(AckChan, SenderChan).

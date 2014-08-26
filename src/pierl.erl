@@ -78,19 +78,22 @@ new_chan() ->
     new_chan(self()).
 
 send(Chan, Msg) ->
+    timer:sleep(5),
     %% lets pretend this is atomic somehow
     ?ATOMICALLY(begin
         Owner = get_owner(Chan),
-        timer:sleep(500),
-        io:format(user, "Sending message [~p] on chan [~p] from [~p]~n", [Msg, Chan, self()]),
+        io:format(user,
+            "[debug] [chan: ~p] <send> msg: ~p~n, from: ~p~n",
+            [Chan, Msg, self()]),
         Owner ! ?TAG_MSG(Chan, Msg)
-    end).
+    end),
+    ok.
 
 recv(Chan, ContF) ->
     ?ASSERT(i_own(Chan)),
     receive
         ?TAG_MSG(Chan, Msg) ->
-            io:format(user, "Received message [~p] on chan [~p]~n", [Msg, Chan]),
+            io:format(user, "[debug] [chan: ~p] (recv) msg: ~p~n", [Chan, Msg]),
             ContF(Msg)
     end.
 
@@ -100,50 +103,48 @@ delegate(Chan, ReceiverChan) ->
     %% etc.
     ?ASSERT(i_own(Chan)),
     ?ATOMICALLY(begin
+        ReceiverPid = get_owner(ReceiverChan),
         ok = block_channel(Chan),
-        ok = forward_messages(Chan, ReceiverChan),
+        ok = forward_messages(Chan, ReceiverPid),
         ok = send(ReceiverChan, ?DELEGATION(Chan)),
-        ok = reg_owner(Chan, get_owner(ReceiverChan))
+        ok = reg_owner(Chan, ReceiverPid)
     end).
 
 %% ======================================================================
 %% Internal helpers
 %% ======================================================================
 
-forward_messages(Chan, ReceiverChan) ->
-    %% First of all, lets forward everything we have right now
-    ReceiverPid = get_owner(ReceiverChan),
-    ok = flush_into(Chan, ReceiverPid),
+forward_messages(Chan, ReceiverPid) ->
+    receive
+        Msg = ?TAG_MSG(Chan, _) ->
+            io:format(user,
+                "[debug] [chan: ~p] |flush| message [~p] into [~p]~n",
+                [Chan, Msg, ReceiverPid]),
+            ReceiverPid ! Msg,
+            forward_messages(Chan, ReceiverPid)
+    after
     %% Now, there might still be messages in transit, but we
     %% can't wait for them because we don't know how long they can take.
     %% However, we need to preserve the order within a channel.
     %% In practice, we could try to investigate local messages in transit
     %% and try to maintain consistent state among remote message routers.
     %% However, this seems both very hard and very taxing in throughput.
-    ok.
-
-
-flush_into(Chan, ReceiverPid) ->
-    receive
-        Msg = ?TAG_MSG(Chan, _) ->
-            ReceiverPid ! Msg,
-            flush_into(Chan, ReceiverPid)
-    after
-        0 -> ok
+        50 -> ok
     end.
 
 compile(_) ->
     throw(not_implemented).
 
 reg_owner(Chan, Pid) ->
-    ets:insert_new(?CHAN_REG_TABLE, {Chan, Pid}).
+    true = ets:insert(?CHAN_REG_TABLE, {Chan, Pid}),
+    ok.
 
 block_channel(Chan) ->
     reg_owner(Chan, ?BLOCKED_CHAN).
 
 get_owner(Chan) ->
     case ets:lookup(?CHAN_REG_TABLE, Chan) of
-        ?BLOCKED_CHAN ->
+        [{_, ?BLOCKED_CHAN}] ->
             timer:sleep(10),
             get_owner(Chan);
         [{Chan, Pid}] ->
@@ -154,7 +155,7 @@ get_owner(Chan) ->
 
 new_chan(Owner) ->
     Chan = erlang:now(),
-    reg_owner(Chan, Owner),
+    ok = reg_owner(Chan, Owner),
     Chan.
 
 %% should be checked statically
