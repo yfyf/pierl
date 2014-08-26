@@ -4,12 +4,17 @@
 %%% * preserve FIFO order (this, combined with the previous
 %%%   point implies that they are _queues_)
 %%% * owned, there's a single process owning a channel and they
-%%%   need to be explicitly delegated to transfer owernship
+%%%   need to be explicitly delegated to transfer ownership
+%%%
+%%% Moreover, it is extended with a `spawn` primitive that
+%%% starts a parallel process parametrised over it's own
+%%% channel.
 %%%
 %%% The model is far from complete:
 %%% * it leaks channels
 %%% * it can't be distributed
 %%% * delegation can suffer from race conditions
+%%% but it's definitely a start!
 -module(pierl).
 
 -include("pierl.hrl").
@@ -20,8 +25,6 @@
 -define(BLOCKED_CHAN, '$blocked').
 -define(CHAN_REG_TABLE, chan_reg_ets).
 
-% stub
--define(ATOMICALLY(X), X).
 -define(ASSERT(Val),
     case Val of
         true ->
@@ -29,6 +32,9 @@
         Other ->
             throw({assertion_failed, Other})
     end).
+
+% stub
+-define(ATOMICALLY(X), X).
 
 -export([
     setup_universe/0
@@ -49,6 +55,7 @@
 
 setup_universe() ->
     ets:new(?CHAN_REG_TABLE, [named_table, public, ordered_set,
+        %% Hack to make this work in the shell
         {heir, erlang:group_leader(), undefined}]).
 
 %% ======================================================================
