@@ -37,7 +37,7 @@
 -define(ATOMICALLY(X), X).
 
 -export([
-    setup_universe/0
+    start/0
 ]).
 
 %% Pi-calculus primitives
@@ -53,9 +53,12 @@
 %% Setup helpers
 %% ======================================================================
 
+start() ->
+    setup_universe().
+
 setup_universe() ->
     ets:new(?CHAN_REG_TABLE, [named_table, public, ordered_set,
-        %% Hack to make this work in the shell
+        %% Hack to make this work in the shell even when it crashes
         {heir, erlang:group_leader(), undefined}]).
 
 %% ======================================================================
