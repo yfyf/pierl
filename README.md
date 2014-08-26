@@ -17,7 +17,7 @@ the perverseness, you can look at the header of [src/pierl.erl](src/pierl.erl)
 for details.
 
 For some (actually, just 1, sorry) examples take a look at
-(src/pierl_demo.erl)[src/pierl_demo.erl]. I hope I to add some comments and
+[src/pierl_demo.erl](src/pierl_demo.erl). I hope I to add some comments and
 more examples later on.
 
 Here's how you can run it:
