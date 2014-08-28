@@ -22,6 +22,13 @@
 -define(PI_MSG_TAG, $m).
 -define(TAG_MSG(Chan, Msg), {?PI_MSG_TAG, {Chan, Msg}}).
 
+-define(REC_CASE(Chan, ContF),
+    ?TAG_MSG(Chan, NS__Msg) ->
+        io:format(user,
+            "[debug] [chan: ~p] (recv) msg: ~p~n", [Chan, NS__Msg]),
+        ContF(NS__Msg)
+).
+
 -define(BLOCKED_CHAN, '$blocked').
 -define(CHAN_REG_TABLE, chan_reg_ets).
 
@@ -45,6 +52,7 @@
     spawn/1,
     new_chan/0,
     send/2,
+    recv/1,
     recv/2,
     delegate/2
 ]).
@@ -58,6 +66,7 @@ start() ->
 
 setup_universe() ->
     ets:new(?CHAN_REG_TABLE, [named_table, public, ordered_set,
+        {read_concurrency, true},
         %% Hack to make this work in the shell even when it crashes
         {heir, erlang:group_leader(), undefined}]).
 
@@ -90,17 +99,52 @@ send(Chan, Msg) ->
     ok.
 
 recv(Chan, ContF) ->
-    ?ASSERT(i_own(Chan)),
+    recv([{Chan, ContF}]).
+
+recv(Binders) ->
+    ?ASSERT(
+        lists:all(fun ({Chan, _}) -> i_own(Chan) end, Binders)
+    ),
+    ManyBinders = force_5_binders(Binders),
+    recv_inner(ManyBinders).
+
+%% @doc Hack: if there are less than 5 binders, we extend
+%% the list with blocking ones to have exactly 5, because `recv_inner' expects
+%% that much. If there are more, we fail.
+force_5_binders(Binders) when length(Binders) > 5 ->
+    throw(more_than_5_receive_cases_not_supported);
+force_5_binders(Binders) ->
+    Len = length(Binders),
+    Remain = 5 - Len,
+    Binders ++ lists:duplicate(Remain, null_binder()).
+
+null_binder() ->
+    {
+        '$non_existing_channel',
+        fun (M) -> throw({received_on_nonexisting_channel, M}) end
+    }.
+
+
+recv_inner([{C1, F1}, {C2, F2}, {C3, F3}, {C4, F4}, {C5, F5}]) ->
     receive
-        ?TAG_MSG(Chan, Msg) ->
-            io:format(user, "[debug] [chan: ~p] (recv) msg: ~p~n", [Chan, Msg]),
-            ContF(Msg)
+        ?REC_CASE(C1, F1);
+        ?REC_CASE(C2, F2);
+        ?REC_CASE(C3, F3);
+        ?REC_CASE(C4, F4);
+        ?REC_CASE(C5, F5)
     end.
 
 delegate(Chan, ReceiverChan) ->
     %% 1. Two delegations of the same channel can't be triggered simultaneously
     %% 2. The channel message queue must be empty or needs to be forwarded
     %% etc.
+    %% TODO: maybe delegations should happen as a two-phase protocol?
+    %% First, just pass a magic message, it can then be handled
+    %% by repeaters and so on transparently.
+    %% When it's received, send an acknowledgement.
+    %% But perhaps it has unintuitive semantics, where you
+    %% intended a specific receiver, but it just passes the channel
+    %% along... Questionable.
     ?ASSERT(i_own(Chan)),
     ?ATOMICALLY(begin
         ReceiverPid = get_owner(ReceiverChan),
