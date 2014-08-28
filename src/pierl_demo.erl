@@ -63,13 +63,13 @@ printer(PrintChan, ErrorChan) ->
     ?PI:recv([
         {PrintChan, fun (M) ->
             io:format(user,
-                "Printer: oh hey, I got some message for printing: ~p~n",
+                "Printer: oh hey, I got some message for printing: ~200p~n",
                 [M]
              )
         end},
         {ErrorChan, fun (Err) ->
             io:format(user,
-                "Printer: aahh! Something bad happened, err: ~p~n",
+                "Printer: aahh! Something bad happened, err: ~200p~n",
                 [Err]
              )
         end}

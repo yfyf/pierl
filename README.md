@@ -28,29 +28,30 @@ Here's how you can run it:
         erl -pa ebin/ -s pierl
         Eshell V5.9.3  (abort with ^G)
         1> pierl_demo:start().
-        {1409,71208,393398}
 
-        [debug] [chan: {1409,71208,394303}] <send> msg: {{1409,71208,394306}, {1409,71208,394289}} , from: <0.34.0>
-        [debug] [chan: {1409,71208,394303}] (recv) msg: {{1409,71208,394306}, {1409,71208,394289}}
-        [debug] [chan: {1409,71208,394306}] <send> msg: ack , from: <0.36.0>
-        [debug] [chan: {1409,71208,394306}] |flush| message [{109, {{1409,71208,394306}, ack}}] into [<0.38.0>]
-        [debug] [chan: {1409,71208,406372}] <send> msg: {'$delegate', {1409,71208,394306}} , from: <0.34.0>
-        [debug] [chan: {1409,71208,406372}] (recv) msg: {'$delegate', {1409,71208,394306}}
-        [debug] [chan: {1409,71208,394306}] (recv) msg: ack
-        [debug] [chan: {1409,71208,394303}] <send> msg: "You will get this message 1 more times." , from: <0.38.0>
-        [debug] [chan: {1409,71208,394303}] (recv) msg: "You will get this message 1 more times."
-        [debug] [chan: {1409,71208,394289}] <send> msg: "You will get this message 1 more times." , from: <0.36.0>
-        [debug] [chan: {1409,71208,394303}] <send> msg: "You will get this message 0 more times." , from: <0.38.0>
-        [debug] [chan: {1409,71208,394289}] (recv) msg: "You will get this message 1 more times."
-        [debug] [chan: {1409,71208,394303}] (recv) msg: "You will get this message 0 more times."
-        Printer: oh hey, I got some message for printing: "You will get this message 1 more times."
-        [debug] [chan: {1409,71208,394289}] <send> msg: "You will get this message 0 more times." , from: <0.36.0>
-        [debug] [chan: {1409,71208,394303}] <send> msg: "Ok, I am done with you." , from: <0.38.0>
-        [debug] [chan: {1409,71208,394289}] (recv) msg: "You will get this message 0 more times."
-        [debug] [chan: {1409,71208,394303}] (recv) msg: "Ok, I am done with you."
+        [debug] [chan: 9] <send> msg: {10,8}, from: <0.39.0>
+        [debug] [chan: 9] (recv) msg: {10,8}
+        [debug] [chan: 10] <send> msg: ack, from: <0.41.0>
+        [debug] [chan: 10] |flush| message [{109,{10,ack}}] into [<0.43.0>]
+        [debug] [chan: 11] <send> msg: {'$delegate',10}, from: <0.39.0>
+        [debug] [chan: 11] (recv) msg: {'$delegate',10}
+        [debug] [chan: 10] (recv) msg: ack
+        [debug] [chan: 9] <send> msg: {'$delegate',12}, from: <0.43.0>
+        [debug] [chan: 9] (recv) msg: {'$delegate',12}
+        [debug] [chan: 8] <send> msg: {'$delegate',12}, from: <0.41.0>
+        [debug] [chan: 8] (recv) msg: {'$delegate',12}
+        [debug] [chan: 12] <send> msg: "I failed to send you new messages, Printer.", from: <0.43.0>
+        [debug] [chan: 12] (recv) msg: "I failed to send you new messages, Printer."
+        Printer: aahh! Something bad happened, err: "I failed to send you new messages, Printer."
+        [debug] [chan: 9] <send> msg: "You will get this message 1 more times.", from: <0.43.0>
+        <..>
+        [debug] [chan: 8] <send> msg: "You will get this message 0 more times.", from: <0.41.0>
+        [debug] [chan: 9] <send> msg: "Ok, I am done with you.", from: <0.43.0>
+        [debug] [chan: 8] (recv) msg: "You will get this message 0 more times."
+        [debug] [chan: 9] (recv) msg: "Ok, I am done with you."
         Printer: oh hey, I got some message for printing: "You will get this message 0 more times."
-        [debug] [chan: {1409,71208,394289}] <send> msg: "Ok, I am done with you." , from: <0.36.0>
-        [debug] [chan: {1409,71208,394289}] (recv) msg: "Ok, I am done with you."
+        [debug] [chan: 8] <send> msg: "Ok, I am done with you.", from: <0.41.0>
+        [debug] [chan: 8] (recv) msg: "Ok, I am done with you."
         Printer: oh hey, I got some message for printing: "Ok, I am done with you."
 
 

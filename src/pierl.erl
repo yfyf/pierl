@@ -25,7 +25,7 @@
 -define(REC_CASE(Chan, ContF),
     ?TAG_MSG(Chan, NS__Msg) ->
         io:format(user,
-            "[debug] [chan: ~p] (recv) msg: ~p~n", [Chan, NS__Msg]),
+            "[debug] [chan: ~200p] (recv) msg: ~200p~n", [Chan, NS__Msg]),
         ContF(NS__Msg)
 ).
 
@@ -92,7 +92,7 @@ send(Chan, Msg) ->
     ?ATOMICALLY(begin
         Owner = get_owner(Chan),
         io:format(user,
-            "[debug] [chan: ~p] <send> msg: ~p~n, from: ~p~n",
+            "[debug] [chan: ~200p] <send> msg: ~200p, from: ~200p~n",
             [Chan, Msg, self()]),
         Owner ! ?TAG_MSG(Chan, Msg)
     end),
@@ -162,7 +162,7 @@ forward_messages(Chan, ReceiverPid) ->
     receive
         Msg = ?TAG_MSG(Chan, _) ->
             io:format(user,
-                "[debug] [chan: ~p] |flush| message [~p] into [~p]~n",
+                "[debug] [chan: ~200p] |flush| message [~200p] into [~200p]~n",
                 [Chan, Msg, ReceiverPid]),
             ReceiverPid ! Msg,
             forward_messages(Chan, ReceiverPid)
@@ -198,9 +198,12 @@ get_owner(Chan) ->
     end.
 
 new_chan(Owner) ->
-    Chan = erlang:now(),
-    ok = reg_owner(Chan, Owner),
-    Chan.
+    NextId = case ets:last(?CHAN_REG_TABLE) of
+        '$end_of_table' -> 1;
+        Id -> Id + 1
+    end,
+    ok = reg_owner(NextId, Owner),
+    NextId.
 
 %% should be checked statically
 i_own(Chan) ->
